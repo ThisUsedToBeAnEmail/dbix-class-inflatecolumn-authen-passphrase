@@ -21,6 +21,12 @@ __PACKAGE__->add_columns(
         data_type          => 'text',
         inflate_passphrase => 'crypt',
     },
+    passphrase_argon => {
+        data_type          => 'text',
+		salt 			   => 'salt_random',
+		passphrase_class   => 'Argon2',
+        inflate_passphrase => 'crypt',
+    },
 );
 
 __PACKAGE__->set_primary_key('id');

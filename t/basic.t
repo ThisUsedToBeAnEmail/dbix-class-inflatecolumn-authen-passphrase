@@ -9,6 +9,7 @@ use TestSchema;
 use SQL::Translator;
 use Authen::Passphrase::SaltedDigest;
 use Authen::Passphrase::BlowfishCrypt;
+use Authen::Passphrase::Argon2;
 
 my $schema = TestSchema->connect('dbi:SQLite:dbname=:memory:');
 $schema->deploy;
@@ -27,20 +28,27 @@ my $crypt_ppr = Authen::Passphrase::BlowfishCrypt->new(
     passphrase  => 'moo',
 );
 
+my $argon_ppr = Authen::Passphrase::Argon2->new(
+    salt_random => 1,
+    passphrase  => 'moo',
+);
+
 my $id = $rs->create({
     passphrase_rfc2307 => $digest_ppr,
     passphrase_crypt   => $crypt_ppr,
+	passphrase_argon => $argon_ppr,
 })->id;
 
 my $row = $rs->find({ id => $id });
 
 like $row->get_column('passphrase_rfc2307'), qr/^\{SSHA\}/,
     'column stored as rfc2307 salted SHA digest';
-
 like $row->get_column('passphrase_crypt'), qr/^\$2a\$/,
     'column stored as unix blowfish crypt';
+like $row->get_column('passphrase_argon'), qr/^\$argon2i\$/,
+    'column stored as unix argon crypt';
 
-for my $t (qw(rfc2307 crypt)) {
+for my $t (qw(rfc2307 crypt argon)) {
     my $ppr = $row->${\"passphrase_${t}"};
     isa_ok $ppr, 'Authen::Passphrase';
 
